@@ -120,11 +120,17 @@ class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTe
                     print(line.bounding_box)
 
     def show_results_with_bounding_boxes(self):
-        plt.clf()
-        print("a")
+        # cv2.destroyAllWindows()
+        # image = cv2.imread(TEMP_IMAGE_NAME)
+        # cv2.imshow("Output", image)
+        # cv2.waitKey(0)
+        plt.close()
+        plt.ion()
+        self._image = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
         plt.imshow(self._image)
+        # plt.draw()
+        plt.pause(0.05)
         plt.show()
-        print("b")
 
 
 cam = cv2.VideoCapture(0)
@@ -136,6 +142,7 @@ cam = cv2.VideoCapture(0)
     3 - transactions per second
 """
 if __name__ == "__main__":
+    plt.ion()
     print(sys.argv)
     demo_type = sys.argv[2]
     tps = float(sys.argv[3])
@@ -165,6 +172,8 @@ if __name__ == "__main__":
         end_time = current_milli_time()
         frame_time = end_time - begin_time
         if frame_time < given_frame_time_millis:
+            print("started sleeping")
             time.sleep((given_frame_time_millis - frame_time) / 1000)
+            print("stopped sleeping")
         else:
             print("Warning, couldn't meet the TPS requirement: too slow!")
