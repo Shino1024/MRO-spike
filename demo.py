@@ -1,6 +1,8 @@
+import random
 from abc import abstractmethod, ABC
 
 import cv2
+import numpy as np
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import TextOperationStatusCodes
 from msrest.authentication import CognitiveServicesCredentials
@@ -118,15 +120,20 @@ class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTe
                 for line in text_result.lines:
                     print(line.text)
                     print(line.bounding_box)
+                    self._bounding_boxes.append(line.bounding_box)
 
     def show_results_with_bounding_boxes(self):
-        # cv2.destroyAllWindows()
-        # image = cv2.imread(TEMP_IMAGE_NAME)
-        # cv2.imshow("Output", image)
-        # cv2.waitKey(0)
         plt.close()
         plt.ion()
         self._image = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
+        for bounding_box in self._bounding_boxes:
+            pts = np.array([[bounding_box[0], bounding_box[1]], [bounding_box[2], bounding_box[3]], [bounding_box[4],
+                                                                                                     bounding_box[5]],
+                            [bounding_box[6], bounding_box[7]]], np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            cv2.polylines(self._image, [pts], True,
+                          (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256)), 10)
+        self._bounding_boxes = []
         plt.imshow(self._image)
         # plt.draw()
         plt.pause(0.05)
