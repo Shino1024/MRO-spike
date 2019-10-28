@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, \
     OperationStatusType
 
-TEMP_IMAGE_NAME = os.getcwd() + "/" + "temp.png"
+TEMP_IMAGE_NAME = "temp.png"
 
 """
     Implement subclasses, using those clients.
@@ -101,7 +101,7 @@ class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTe
         super().__init__()
 
     def do_work(self):
-        recognize_printed_results = self._cv_client.batch_read_file(TEMP_IMAGE_NAME, raw=True)
+        recognize_printed_results = self._cv_client.batch_read_file_in_stream(open(TEMP_IMAGE_NAME, "rb"), raw=True)
         operation_location_remote = recognize_printed_results.headers["Operation-Location"]
         # Grab the ID from the URL
         operation_id = operation_location_remote.split("/")[-1]
@@ -120,7 +120,11 @@ class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTe
                     print(line.bounding_box)
 
     def show_results_with_bounding_boxes(self):
+        plt.clf()
+        print("a")
         plt.imshow(self._image)
+        plt.show()
+        print("b")
 
 
 cam = cv2.VideoCapture(0)
@@ -155,6 +159,7 @@ if __name__ == "__main__":
             break
         demo.feed_image(frame)
         demo.convert_image()
+        print("doing work")
         demo.do_work()
         demo.show_results_with_bounding_boxes()
         end_time = current_milli_time()
