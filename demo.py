@@ -19,7 +19,7 @@ from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 import matplotlib.pyplot as plt
 from azure.cognitiveservices.vision.face.models import TrainingStatusType, Person, SnapshotObjectType, \
-    OperationStatusType
+    OperationStatusType, FaceAttributeType
 
 TEMP_IMAGE_NAME = "temp.png"
 
@@ -28,7 +28,7 @@ TEMP_IMAGE_NAME = "temp.png"
 """
 CLIENTS = {
     "FaceClient": FaceClient,  # for cringe detector
-    "CringeDetector": ComputerVisionClient  # for text bounding
+    "ComputerVisionClient": ComputerVisionClient  # for text bounding
 }
 
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -94,6 +94,9 @@ class MCVImageDescriptorForCringe(MCVModelUsageConcreteImplementationForCringe):
         self._cringe_threshold = MCVImageDescriptorForCringe.CRINGE_THRESHOLD
 
     def _is_cringe(self, emotion):
+        print(emotion.neutral * self._cringe_parameters["neutral"] + \
+                emotion.disgust * self._cringe_parameters["disgust"] + \
+                emotion.contempt * self._cringe_parameters["contempt"])
         if emotion.neutral * self._cringe_parameters["neutral"] + \
                 emotion.disgust * self._cringe_parameters["disgust"] + \
                 emotion.contempt * self._cringe_parameters["contempt"] > self._cringe_threshold:
@@ -102,12 +105,12 @@ class MCVImageDescriptorForCringe(MCVModelUsageConcreteImplementationForCringe):
             return False
 
     def do_work(self):
-        detected_faces = self._cv_client.face.detect_with_stream(open(TEMP_IMAGE_NAME, 'rb'))
+        detected_faces = self._cv_client.face.detect_with_stream(open(TEMP_IMAGE_NAME, 'rb'), return_face_attributes=FaceAttributeType.emotion)
         if not detected_faces:
             print('No face detected from image {}'.format("camera"))
         for face in detected_faces:
-            print(face.face_id)
-            print(dir(face.face_attributes))
+            print(face.face_attributes.emotion)
+            print(face.face_rectangle)
             if face.face_attributes is not None and self._is_cringe(face.face_attributes.emotion):
                 self._bounding_boxes.append(face.face_rectangle)
 
