@@ -104,10 +104,11 @@ class MCVImageDescriptorForCringe(MCVModelUsageConcreteImplementationForCringe):
     def do_work(self):
         detected_faces = self._cv_client.face.detect_with_stream(open(TEMP_IMAGE_NAME, 'rb'))
         if not detected_faces:
-            raise Exception('No face detected from image {}'.format("camera"))
+            print('No face detected from image {}'.format("camera"))
         for face in detected_faces:
             print(face.face_id)
-            if self._is_cringe(face.face_attributes.emotion):
+            print(dir(face.face_attributes))
+            if face.face_attributes is not None and self._is_cringe(face.face_attributes.emotion):
                 self._bounding_boxes.append(face.face_rectangle)
 
     def show_results_with_bounding_boxes(self):
