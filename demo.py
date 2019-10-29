@@ -28,7 +28,7 @@ TEMP_IMAGE_NAME = "temp.png"
 """
 CLIENTS = {
     "FaceClient": FaceClient,  # for cringe detector
-    "ComputerVisionClient": ComputerVisionClient  # for text bounding
+    "CringeDetector": ComputerVisionClient  # for text bounding
 }
 
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -50,6 +50,7 @@ class MCVModelUsage(ABC):
 
     def feed_image(self, image):
         self._image = image
+        self._image = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
 
     def convert_image(self):
         cv2.imwrite(TEMP_IMAGE_NAME, self._image)
@@ -85,16 +86,46 @@ class MCVImageDescriptorForCringe(MCVModelUsageConcreteImplementationForCringe):
         "disgust": 0.2,
         "contempt": 0.2
     }
+    CRINGE_THRESHOLD = 0.7
 
     def __init__(self):
         super().__init__()
         self._cringe_parameters = MCVImageDescriptorForCringe.CRINGE_PARAMETERS
+        self._cringe_threshold = MCVImageDescriptorForCringe.CRINGE_THRESHOLD
+
+    def _is_cringe(self, emotion):
+        if emotion.neutral * self._cringe_parameters["neutral"] + \
+                emotion.disgust * self._cringe_parameters["disgust"] + \
+                emotion.contempt * self._cringe_parameters["contempt"] > self._cringe_threshold:
+            return True
+        else:
+            return False
 
     def do_work(self):
-        pass  # TODO: implement this
+        detected_faces = self._cv_client.face.detect_with_stream(open(TEMP_IMAGE_NAME, 'rb'))
+        if not detected_faces:
+            raise Exception('No face detected from image {}'.format("camera"))
+        for face in detected_faces:
+            print(face.face_id)
+            if self._is_cringe(face.face_attributes.emotion):
+                self._bounding_boxes.append(face.face_rectangle)
 
     def show_results_with_bounding_boxes(self):
-        pass  # TODO: implement this
+        plt.close()
+        plt.ion()
+        for bounding_box in self._bounding_boxes:
+            pts = np.array([[bounding_box.left, bounding_box.top],
+                            [bounding_box.left, bounding_box.top + bounding_box.height],
+                            [bounding_box.left + bounding_box.width, bounding_box.top + bounding_box.height],
+                            [bounding_box.left + bounding_box.width, bounding_box.height]], np.int32)
+            pts = pts.reshape((-1, 1, 2))
+            cv2.polylines(self._image, [pts], True,
+                          (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256)), 10)
+        self._bounding_boxes = []
+        plt.imshow(self._image)
+        # plt.draw()
+        plt.pause(0.05)
+        plt.show()
 
 
 class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTextBounding):
@@ -125,7 +156,6 @@ class MCVImageDescriptorForTextBounding(MCVModelUsageConcreteImplementationForTe
     def show_results_with_bounding_boxes(self):
         plt.close()
         plt.ion()
-        self._image = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
         for bounding_box in self._bounding_boxes:
             pts = np.array([[bounding_box[0], bounding_box[1]], [bounding_box[2], bounding_box[3]], [bounding_box[4],
                                                                                                      bounding_box[5]],
